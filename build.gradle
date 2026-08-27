@@ -1,6 +1,8 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '4.1.1'
+    id 'org.springframework.boot' version '3.5.14'
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -19,26 +21,8 @@ repositories {
 }
 
 ext {
-    set('springAiVersion', "2.0.1")
-}
-
-dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
-    implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory'
-    implementation 'org.springframework.ai:spring-ai-starter-model-mistral-ai'
-    implementation 'org.springframework.ai:spring-ai-starter-model-openai'
-    compileOnly 'org.projectlombok:lombok'
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
-    runtimeOnly 'org.postgresql:postgresql'
-    annotationProcessor 'org.projectlombok:lombok'
-    testImplementation 'org.springframework.boot:spring-boot-starter-actuator-test'
-    testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
-    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
-    testCompileOnly 'org.projectlombok:lombok'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    testAnnotationProcessor 'org.projectlombok:lombok'
+    springAiVersion = '1.1.5'
+    apacheCommonsLang3Version = '3.18.0'
 }
 
 dependencyManagement {
@@ -47,6 +31,74 @@ dependencyManagement {
     }
 }
 
+dependencies {
+
+    // Spring Boot
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // Spring AI
+    implementation 'org.springframework.ai:spring-ai-openai'
+
+    implementation 'org.springframework.ai:spring-ai-rag'
+
+    implementation 'org.jsoup:jsoup:1.17.2'
+
+    implementation 'commons-fileupload:commons-fileupload:1.4'
+
+    // Security
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    // Swagger / OpenAPI
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.16'
+
+    // PostgreSQL
+    runtimeOnly 'org.postgresql:postgresql'
+
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    // Observability dependencies
+    // Actuator
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    // Metrics
+    runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
+    // Micrometer Tracing -> OpenTelemetry
+    runtimeOnly 'io.micrometer:micrometer-tracing-bridge-otel'
+    // OpenTelemetry -> Zipkin exporter
+    runtimeOnly 'io.opentelemetry:opentelemetry-exporter-zipkin'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // Apache Commons
+    implementation "org.apache.commons:commons-lang3:${apacheCommonsLang3Version}"
+
+    // Apache HttpClient 5
+    implementation 'org.apache.httpcomponents.client5:httpclient5'
+
+    // Tests
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+
+    testCompileOnly 'org.projectlombok:lombok'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+}
+
+
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+tasks.processResources {
+    filesMatching('application.yaml') {
+        filter(ReplaceTokens, tokens: [
+                'project.version': project.version.toString()
+        ])
+    }
+}
+
+tasks.named('jar') {
+    enabled = false
 }
