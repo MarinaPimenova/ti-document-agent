@@ -28,8 +28,6 @@ public class DocumentSet {
                         Item.builder()
                                 .title(item.title())
                                 .type(item.type())
-                                .studyName(item.studyName())
-                                .revOpsId(item.revOpsId())
                                 .url(item.source())
                                 .similarity(item.similarity())
                                 .build())
@@ -55,8 +53,7 @@ public class DocumentSet {
     public static class Item {
         private String title;
         private String type;
-        private String studyName;
-        private String revOpsId;
+
         private String url;
         private Double similarity;
 
@@ -65,8 +62,6 @@ public class DocumentSet {
             return new ToStringBuilder(this, ToStringStyle.NO_CLASS_NAME_STYLE)
                     .append("title", title)
                     .append("type", type)
-                    .append("studyName", studyName)
-                    .append("revOpsId", revOpsId)
                     .append("url", url)
                     .toString();
         }

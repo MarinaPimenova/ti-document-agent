@@ -56,6 +56,22 @@ datasource:
     password: ${POSTGRES_PASSWORD:postgres}
     driverClassName: org.postgresql.Driver
 
+rag:
+  retrieval:
+    top-k: 8
+    similarity-threshold: 0.70
+
+  chunking:
+    chunk-size: 800
+    min-chunk-size-chars: 350
+    min-chunk-length-to-embed: 10
+    max-num-chunks: 10000
+
+  generation:
+    default-question-count: 10
+    max-question-count: 20
+    max-answer-sentences: 2
+
 ms:
   cors:
     allowed-origins: "${SWAGGER_ALLOWED_ORIGINS:http://localhost:8080}"

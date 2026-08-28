@@ -1,98 +1,89 @@
 package com.wk.ti.rag.service;
 
-import com.wk.ti.api.dto.*;
+import com.wk.ti.api.dto.AgentPayload;
+import com.wk.ti.api.dto.DocumentAgentResponse;
+import com.wk.ti.api.dto.DocumentSet;
+import com.wk.ti.api.dto.SourceSet;
+import com.wk.ti.exception.RagNoContextException;
+import com.wk.ti.rag.config.RagProperties;
+import com.wk.ti.rag.dto.GenerateInterviewRequest;
+import com.wk.ti.rag.dto.InterviewQuestionResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.PromptChatMemoryAdvisor;
-import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
-import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
-import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
+import org.springframework.ai.document.Document;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+
+import static com.wk.ti.api.dto.DocumentAgentResponse.toSummary;
 
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class RagService {
-    private static final String NEW_SESSION_ID = "1";
 
-    private final String template = """
-            You're assisting with questions.
-            Use the following context and chat history to answer the QUESTION but act as if you knew this information innately.
-            If unsure, simply state that you don't know.
-            
-            QUESTION
-            {question}
-            
-            """;
-    @Value("classpath:/system-prompt-template.st")
-    private Resource systemPrompt;
-    private final ChatMemory chatMemory;
-    private final ChatClient chatClient;
-    private final QuestionAnswerAdvisor questionAnswerAdvisor;
-    private final SimpleLoggerAdvisor simpleLoggerAdvisor;
+    private final DocumentRetriever documentRetriever;
+    private final InterviewQuestionGenerator questionGenerator;
+    private final RagProperties ragProperties;
 
-    public RagService(
-            VectorStore vectorStore,
-            ChatMemory chatMemory, ChatClient chatClient) {
-        this.chatMemory = chatMemory;
-        this.chatClient = chatClient;
-        this.questionAnswerAdvisor = QuestionAnswerAdvisor.builder(vectorStore).build();
-        this.simpleLoggerAdvisor = new SimpleLoggerAdvisor();
-    }
+    public DocumentAgentResponse /*InterviewQuestionResponse*/ generate(
+            String conversationId,
+            AgentPayload agentPayload) {
+        GenerateInterviewRequest request = new GenerateInterviewRequest(agentPayload.question(), 10);
+        Assert.notNull(request, "request cannot be null");
 
-    public DocumentAgentResponse generate(String conversationId, AgentPayload agentPayload) {
+        String userQuestion = request.question();
 
-        String question = agentPayload.question();
-        Long questionId = agentPayload.questionId();
-        Assert.notNull(conversationId, "conversationId cannot be null");
-        Assert.notNull(question, "question cannot be null");
-        Assert.notNull(questionId, "questionId cannot be null");
+        Assert.hasText(
+                userQuestion,
+                "question cannot be null or empty"
+        );
 
-        PromptTemplate pt = new PromptTemplate(template);
-        Prompt p = pt.create(Map.of("question", question));
-        if (NEW_SESSION_ID.equals(conversationId)) {
-            conversationId = UUID.randomUUID().toString();
+        int questionCount = request.questionCountOrDefault(
+                ragProperties.getGeneration().getDefaultQuestionCount()
+        );
+
+        validateQuestionCount(questionCount);
+
+        log.info(
+                "Starting RAG generation. question='{}', questionCount={}",
+                userQuestion,
+                questionCount
+        );
+
+        List<Document> documents =
+                documentRetriever.retrieve(userQuestion);
+
+        if (documents.isEmpty()) {
+            throw new RagNoContextException(
+                    "No relevant information was found in the uploaded documents."
+            );
         }
 
-        String content = chatClient
-                .prompt(p)
-                .system(systemSpec -> systemSpec.text(systemPrompt)
-                        .param("question", question))
-                .advisors(
-                        promptChatMemoryAdvisor(conversationId),
-                        questionAnswerAdvisor,
-                        simpleLoggerAdvisor)
-                .call()
-                .content();
-
-        DocumentAgentResponse finalResponse = DocumentAgentResponse.builder()
+        InterviewQuestionResponse response = questionGenerator.generate(
+                userQuestion,
+                documents,
+                questionCount);
+        return DocumentAgentResponse.builder()
                 .conversationId(conversationId)
-                .questionId(questionId)
-                .termList(question)
+                .questionId(agentPayload.questionId())
+                .summary(toSummary(response))
                 .sourceSet(SourceSet.fallbackSummary())
                 .documentSet(DocumentSet.of(List.of()))
-                .summary(content)
+                .termList(agentPayload.question())
                 .build();
-        log.info("Document Agent: final step: final response was generated. QuestionId: {}, question: {}, Summary: {}",
-                questionId, question, finalResponse.getSummary());
-        return finalResponse;
     }
 
-    protected PromptChatMemoryAdvisor promptChatMemoryAdvisor(String conversationId) {
-        return PromptChatMemoryAdvisor
-                .builder(chatMemory)
-                .conversationId(conversationId)
-                .build();
+    private void validateQuestionCount(int questionCount) {
+
+        if (questionCount < 1
+                || questionCount > ragProperties.getGeneration().getMaxQuestionCount()) {
+
+            throw new IllegalArgumentException(
+                    "Question count must be between 1 and "
+                            + ragProperties.getGeneration().getMaxQuestionCount()
+            );
+        }
     }
 }
-
-

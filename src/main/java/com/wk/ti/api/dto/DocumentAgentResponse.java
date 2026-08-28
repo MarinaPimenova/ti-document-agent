@@ -3,12 +3,15 @@ package com.wk.ti.api.dto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.wk.ti.rag.dto.InterviewQuestionResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
@@ -28,6 +31,16 @@ public class DocumentAgentResponse {
     private SourceSet sourceSet;
     private DocumentSet documentSet;
     private String summary;
+
+    @JsonIgnore
+    public static String toSummary(InterviewQuestionResponse response) {
+        return response.questions().stream()
+                .map(q -> q.number() + "."
+                        + q.question()
+                        + "\nAnswer:"
+                        + q.answer())
+                .collect(Collectors.joining("\n\n"));
+    }
 
     @JsonIgnore
     @Override
