@@ -32,18 +32,19 @@ dependencyManagement {
 }
 
 dependencies {
-
     // Spring Boot
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 
     // Spring AI
     implementation 'org.springframework.ai:spring-ai-openai'
-
     implementation 'org.springframework.ai:spring-ai-rag'
+    implementation 'org.springframework.ai:spring-ai-advisors-vector-store'
+    implementation 'org.springframework.ai:spring-ai-pgvector-store'
+    implementation 'org.springframework.ai:spring-ai-mistral-ai'
 
     implementation 'org.jsoup:jsoup:1.17.2'
-
     implementation 'commons-fileupload:commons-fileupload:1.4'
 
     // Security
@@ -57,7 +58,6 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
 
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
-
     // Observability dependencies
     // Actuator
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
@@ -73,7 +73,6 @@ dependencies {
 
     // Apache Commons
     implementation "org.apache.commons:commons-lang3:${apacheCommonsLang3Version}"
-
     // Apache HttpClient 5
     implementation 'org.apache.httpcomponents.client5:httpclient5'
 

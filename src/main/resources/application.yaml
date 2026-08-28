@@ -20,6 +20,17 @@ spring:
           issuer-uri: https://${OKTA_DOMAIN}/
 
   ai:
+    vectorstore:
+      pgvector:
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        dimensions: 1024 # 768 for postgresMl
+        initialize-schema: false
+        schema-name: public
+        table-name: vector_store
+        max-document-batch-size: 10000
+    mistralai:
+      api-key: ${MISTRAL_AI_API_KEY}
     openai:
       api-key: ${OPEN_AI_API_KEY}
       base-url: ${OPEN_AI_ENDPOINT:https://ai-proxy.lab.epam.com}
@@ -28,6 +39,11 @@ spring:
         model: "${CHAT_MODEL:gpt-4.1-mini-2025-04-14}" # gpt-4-turbo
         base-url: ${OPEN_AI_ENDPOINT:https://ai-proxy.lab.epam.com}
         embeddings-path: /openai/deployments/text-embedding-ada-002/embeddings
+  datasource:
+    driverClassName: org.postgresql.Driver
+    jdbcUrl: ${datasource.pgvector.url}
+    username: ${datasource.pgvector.username}
+    password: ${datasource.pgvector.password}
 
 openai:
   image-model: "${IMAGE_MODEL:anthropic.claude-v3-haiku}" #gpt-4-vision-preview
@@ -40,6 +56,9 @@ datasource:
     password: ${POSTGRES_PASSWORD:postgres}
     driverClassName: org.postgresql.Driver
 
+ms:
+  cors:
+    allowed-origins: "${SWAGGER_ALLOWED_ORIGINS:http://localhost:8080}"
 
 group:
   admin: ${ADMINS}
@@ -74,10 +93,6 @@ logging:
   structured:
     format:
       console: ecs # Emits logs in ECS JSON format containing service, traceId, spanId
-
-ms:
-  cors:
-    allowed-origins: "${SWAGGER_ALLOWED_ORIGINS:http://localhost:8080}"
 
 springdoc:
   api-docs:
