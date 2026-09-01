@@ -10,6 +10,11 @@ info:
     name: ti-document-agent
     version: '@project.version@'
 
+http:
+  client:
+    connect-timeout: ${HTTP_CLIENT_CONNECT_TIMEOUT:5000}
+    read-timeout: ${HTTP_CLIENT_READ_TIMEOUT:120000}
+
 spring:
   application:
     name: ${info.app.name}
@@ -18,7 +23,30 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: https://${OKTA_DOMAIN}/
-
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_schema: assistant
+        hbm2ddl:
+          auto: none
+          jdbc:
+            batch_size: 30
+    hibernate:
+      # turn off the hibernate auto-creation of the tables from the entity objects
+      ddl-auto: none
+    open-in-view: false
+  datasource:
+    hikari:
+      minimum-idle: 5
+      connection-timeout: 50000    # 60s (don’t let threads hang for 5 minutes)
+      leak-detection-threshold: 20000 # 20s, temporary during investigation
+      max-lifetime: 1800000        # 30m default-ish, keep explicit
+      idle-timeout: 600000         # 10m
+    url: ${ASSISTANT_DB_URL:jdbc:postgresql://localhost:5434/assistant_db}
+    driverClassName: org.postgresql.Driver
+    username: ${ASSISTANT_USER:assistant_user}
+    password: ${ASSISTANT_PASSWORD:qwerty}
   ai:
     vectorstore:
       pgvector:
@@ -29,31 +57,28 @@ spring:
         schema-name: public
         table-name: vector_store
         max-document-batch-size: 10000
+
     mistralai:
       api-key: ${MISTRAL_AI_API_KEY}
     openai:
       api-key: ${OPEN_AI_API_KEY}
-      base-url: ${OPEN_AI_ENDPOINT:https://ai-proxy.lab.epam.com}
+      #base-url: ${OPEN_AI_ENDPOINT:https://ai-proxy.lab.epam.com/openai/deployments/gpt-4.1-mini-2025-04-14}
       chat:
-        completions-path: "${OPEN_AI_COMPLETIONS_PATH:/openai/deployments/gpt-4.1-mini-2025-04-14/chat/completions}"
         model: "${CHAT_MODEL:gpt-4.1-mini-2025-04-14}" # gpt-4-turbo
-        base-url: ${OPEN_AI_ENDPOINT:https://ai-proxy.lab.epam.com}
-        embeddings-path: /openai/deployments/text-embedding-ada-002/embeddings
-  datasource:
-    driverClassName: org.postgresql.Driver
-    jdbcUrl: ${datasource.pgvector.url}
-    username: ${datasource.pgvector.username}
-    password: ${datasource.pgvector.password}
-
-openai:
-  image-model: "${IMAGE_MODEL:anthropic.claude-v3-haiku}" #gpt-4-vision-preview
-  image-completions-path: "${IMAGE_AI_COMPLETIONS_PATH:/openai/deployments/anthropic.claude-v3-haiku/chat/completions}"
+        base-url: ${OPEN_AI_ENDPOINT:https://ai-proxy.lab.epam.com/openai/deployments/gpt-4.1-mini-2025-04-14}
+        temperature: 0.7
+    retry:
+      max-attempts: 2
+      backoff:
+        initial-interval: 4000ms
+      on-client-errors: true
+    timeout: 40000ms
 
 datasource:
   pgvector:
-    jdbcUrl: "${PGVECTOR_URL:jdbc:postgresql://localhost:5433/document_db}" #?stringtype=unspecified # 5433
-    username: ${POSTGRES_USER:postgres}
-    password: ${POSTGRES_PASSWORD:postgres}
+    jdbcUrl: "${DOCUMENT_DB_URL:jdbc:postgresql://localhost:5433/document_db}" #?stringtype=unspecified # 5433
+    username: ${DOCUMENT_USER:postgres}
+    password: ${DOCUMENT_PASSWORD:postgres}
     driverClassName: org.postgresql.Driver
 
 ms:
