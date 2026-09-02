@@ -16,11 +16,7 @@ public class DocumentService {
     private final QuestionGenerationSectionRepository sectionRepository;
 
     public List<DocumentProjection> getDocuments() {
-        return documentRepository.findAll().stream()
-                .map(entity -> new DocumentProjection(
-                        entity.getId(), entity.getFilename()
-                ))
-                .toList();
+        return documentRepository.findDocumentProjection();
     }
 
     public List<DocumentSection> getSections(Long documentId) {
