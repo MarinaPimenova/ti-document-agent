@@ -3,8 +3,8 @@ package com.wk.ti.rag.service;
 import com.wk.ti.rag.dto.AgentPayload;
 import com.wk.ti.rag.dto.DocumentAgentResponse;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.async.DeferredResult;
@@ -15,10 +15,17 @@ import java.util.concurrent.RejectedExecutionException;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class DeferredResultService {
     private final RagService ragService;
     private final ExecutorService agentExecutor;
+
+    public DeferredResultService(
+            RagService ragService,
+            @Qualifier("agentExecutor")
+            ExecutorService agentExecutor) {
+        this.ragService = ragService;
+        this.agentExecutor = agentExecutor;
+    }
 
     public DeferredResult<ResponseEntity<DocumentAgentResponse>> getDeferredResult(
             String conversationId,

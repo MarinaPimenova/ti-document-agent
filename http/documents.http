@@ -1,0 +1,25 @@
+#
+#[
+#{
+#    "id": 1,
+#    "filename": "microservices-on-aws.pdf"
+#  },
+#  {
+#    "id": 2,
+#    "filename": "microservices-on-aws.pdf"
+#  }
+#]
+GET http://localhost:8087/rest/v1/documents
+Accept: application/json
+
+###
+###
+POST http://localhost:8087/rest/v1/documents/2/question-generation
+Accept: application/json
+Content-Type: application/json
+
+{
+  "userMessage": "Please provide interview question about AWS Lambda",
+  "requestedQuestionCount": "10"
+}
+###

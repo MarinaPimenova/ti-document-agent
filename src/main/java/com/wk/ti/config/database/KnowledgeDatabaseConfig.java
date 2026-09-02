@@ -15,48 +15,47 @@ import org.springframework.transaction.PlatformTransactionManager;
 import javax.sql.DataSource;
 import java.util.Map;
 
-@Configuration(proxyBeanMethods = false)
+@Configuration
 @EnableJpaRepositories(
-        basePackages = "com.wk.ti.assistant.repository",
-        entityManagerFactoryRef = "assistantEntityManagerFactory",
-        transactionManagerRef = "assistantTransactionManager"
+        basePackages = "com.wk.ti.knowledge.repository",
+        entityManagerFactoryRef = "knowledgeEntityManagerFactory",
+        transactionManagerRef = "knowledgeTransactionManager"
 )
-public class AssistantDatabaseConfig {
+public class KnowledgeDatabaseConfig {
 
     @Bean
-    @ConfigurationProperties("spring.datasource.assistant")
-    public DataSourceProperties assistantDataSourceProperties() {
+    @ConfigurationProperties("spring.datasource.knowledge")
+    public DataSourceProperties knowledgeDataSourceProperties() {
         return new DataSourceProperties();
     }
 
     @Bean
-    public DataSource assistantDataSource(
-            @Qualifier("assistantDataSourceProperties")
+    public DataSource knowledgeDataSource(
+            @Qualifier("knowledgeDataSourceProperties")
             DataSourceProperties properties) {
 
-        return properties
-                .initializeDataSourceBuilder()
-                .build();
+        return properties.initializeDataSourceBuilder().build();
     }
 
     @Bean
-    public LocalContainerEntityManagerFactoryBean assistantEntityManagerFactory(
+    public LocalContainerEntityManagerFactoryBean knowledgeEntityManagerFactory(
             EntityManagerFactoryBuilder builder,
-            @Qualifier("assistantDataSource") DataSource dataSource) {
+            @Qualifier("knowledgeDataSource")
+            DataSource dataSource) {
 
         return builder
                 .dataSource(dataSource)
-                .packages("com.wk.ti.assistant.entity")
-                .persistenceUnit("assistant")
+                .packages("com.wk.ti.knowledge.entity")
+                .persistenceUnit("knowledge")
                 .properties(Map.of(
-                        "hibernate.default_schema", "assistant"
+                        "hibernate.default_schema", "knowledge"
                 ))
                 .build();
     }
 
     @Bean
-    public PlatformTransactionManager assistantTransactionManager(
-            @Qualifier("assistantEntityManagerFactory")
+    public PlatformTransactionManager knowledgeTransactionManager(
+            @Qualifier("knowledgeEntityManagerFactory")
             EntityManagerFactory entityManagerFactory) {
 
         return new JpaTransactionManager(entityManagerFactory);

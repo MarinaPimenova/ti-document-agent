@@ -10,11 +10,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+@SuppressWarnings("deprecation")
 @Configuration
 public class AgentExecutorConfig {
 
     // Store executor reference to call shutdown
-    private ExecutorService agentExecutor;
+    private ExecutorService internalExecutor;
 
     @Bean(name = "agentExecutor")
     public ExecutorService agentExecutor(
@@ -22,7 +23,7 @@ public class AgentExecutorConfig {
         int cores = Runtime.getRuntime().availableProcessors();
         int minThreads = Math.max(4, cores);           // tune to your environment
         int maxThreads = minThreads * 2;
-        agentExecutor = new ThreadPoolExecutor(
+        internalExecutor = new ThreadPoolExecutor(
                 minThreads,
                 maxThreads,
                 30,
@@ -35,20 +36,20 @@ public class AgentExecutorConfig {
                 },
                 new ThreadPoolExecutor.AbortPolicy()
         );
-        return this.agentExecutor;
+        return this.internalExecutor;
     }
 
     @PreDestroy
     public void shutdownExecutor() {
-        if (agentExecutor != null && !agentExecutor.isShutdown()) {
-            agentExecutor.shutdown(); // Stop accepting new tasks
+        if (internalExecutor != null && !internalExecutor.isShutdown()) {
+            internalExecutor.shutdown(); // Stop accepting new tasks
             try {
                 // Wait for ongoing tasks to finish (max 60 seconds)
-                if (!agentExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
-                    agentExecutor.shutdownNow(); // Force shutdown if not terminated
+                if (!internalExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
+                    internalExecutor.shutdownNow(); // Force shutdown if not terminated
                 }
             } catch (InterruptedException ex) {
-                agentExecutor.shutdownNow();
+                internalExecutor.shutdownNow();
                 Thread.currentThread().interrupt();
             }
         }

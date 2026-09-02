@@ -28,8 +28,8 @@ import java.util.UUID;
 public class RagService {
     private static final String NEW_SESSION_ID = "1";
 
-    private final String template = """
-            You're assisting with questions.
+    private final static String template = """
+            You're assisting with answering on users questions.
             Use the following context and chat history to answer the QUESTION but act as if you knew this information innately.
             If unsure, simply state that you don't know.
             

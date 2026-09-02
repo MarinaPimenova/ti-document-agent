@@ -2,8 +2,9 @@ package com.wk.ti.config.database;
 
 import jakarta.persistence.EntityManagerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
 import org.springframework.boot.jpa.EntityManagerFactoryBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,48 +16,47 @@ import org.springframework.transaction.PlatformTransactionManager;
 import javax.sql.DataSource;
 import java.util.Map;
 
-@Configuration(proxyBeanMethods = false)
+@Configuration
 @EnableJpaRepositories(
-        basePackages = "com.wk.ti.assistant.repository",
-        entityManagerFactoryRef = "assistantEntityManagerFactory",
-        transactionManagerRef = "assistantTransactionManager"
+        basePackages = "com.wk.ti.document.repository",
+        entityManagerFactoryRef = "documentEntityManagerFactory",
+        transactionManagerRef = "documentTransactionManager"
 )
-public class AssistantDatabaseConfig {
+public class DocumentDatabaseConfig {
 
     @Bean
-    @ConfigurationProperties("spring.datasource.assistant")
-    public DataSourceProperties assistantDataSourceProperties() {
+    @ConfigurationProperties("spring.datasource.document")
+    public DataSourceProperties documentDataSourceProperties() {
         return new DataSourceProperties();
     }
 
     @Bean
-    public DataSource assistantDataSource(
-            @Qualifier("assistantDataSourceProperties")
+    public DataSource documentDataSource(
+            @Qualifier("documentDataSourceProperties")
             DataSourceProperties properties) {
 
-        return properties
-                .initializeDataSourceBuilder()
-                .build();
+        return properties.initializeDataSourceBuilder().build();
     }
 
     @Bean
-    public LocalContainerEntityManagerFactoryBean assistantEntityManagerFactory(
+    public LocalContainerEntityManagerFactoryBean documentEntityManagerFactory(
             EntityManagerFactoryBuilder builder,
-            @Qualifier("assistantDataSource") DataSource dataSource) {
+            @Qualifier("documentDataSource")
+            DataSource dataSource) {
 
         return builder
                 .dataSource(dataSource)
-                .packages("com.wk.ti.assistant.entity")
-                .persistenceUnit("assistant")
+                .packages("com.wk.ti.document.entity")
+                .persistenceUnit("document")
                 .properties(Map.of(
-                        "hibernate.default_schema", "assistant"
+                        "hibernate.default_schema", "public"
                 ))
                 .build();
     }
 
     @Bean
-    public PlatformTransactionManager assistantTransactionManager(
-            @Qualifier("assistantEntityManagerFactory")
+    public PlatformTransactionManager documentTransactionManager(
+            @Qualifier("documentEntityManagerFactory")
             EntityManagerFactory entityManagerFactory) {
 
         return new JpaTransactionManager(entityManagerFactory);
