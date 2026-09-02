@@ -1,15 +1,19 @@
 package com.wk.ti.rag.service;
 
-import com.wk.ti.api.dto.*;
+import com.wk.ti.rag.dto.AgentPayload;
+import com.wk.ti.rag.dto.DocumentAgentResponse;
+import com.wk.ti.rag.dto.DocumentSet;
+import com.wk.ti.rag.dto.SourceSet;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.PromptChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -24,8 +28,8 @@ import java.util.UUID;
 public class RagService {
     private static final String NEW_SESSION_ID = "1";
 
-    private final String template = """
-            You're assisting with questions.
+    private final static String template = """
+            You're assisting with answering on users questions.
             Use the following context and chat history to answer the QUESTION but act as if you knew this information innately.
             If unsure, simply state that you don't know.
             
@@ -33,20 +37,28 @@ public class RagService {
             {question}
             
             """;
+
     @Value("classpath:/system-prompt-template.st")
     private Resource systemPrompt;
-    private final ChatMemory chatMemory;
+
     private final ChatClient chatClient;
     private final QuestionAnswerAdvisor questionAnswerAdvisor;
+    private final MessageChatMemoryAdvisor messageChatMemoryAdvisor;
+
     private final SimpleLoggerAdvisor simpleLoggerAdvisor;
 
     public RagService(
+            @Qualifier("documentVectorStore")
             VectorStore vectorStore,
-            ChatMemory chatMemory, ChatClient chatClient) {
-        this.chatMemory = chatMemory;
+            @Qualifier("documentChatMemory")
+            ChatMemory chatMemory,
+            @Qualifier("openAiChatClient")
+            ChatClient chatClient) {
         this.chatClient = chatClient;
         this.questionAnswerAdvisor = QuestionAnswerAdvisor.builder(vectorStore).build();
         this.simpleLoggerAdvisor = new SimpleLoggerAdvisor();
+        this.messageChatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory)
+                .build();
     }
 
     public DocumentAgentResponse generate(String conversationId, AgentPayload agentPayload) {
@@ -59,40 +71,36 @@ public class RagService {
 
         PromptTemplate pt = new PromptTemplate(template);
         Prompt p = pt.create(Map.of("question", question));
-        if (NEW_SESSION_ID.equals(conversationId)) {
-            conversationId = UUID.randomUUID().toString();
-        }
+
+        final String activeConversationId = NEW_SESSION_ID.equals(conversationId)
+                ? UUID.randomUUID().toString()
+                : conversationId;
 
         String content = chatClient
                 .prompt(p)
                 .system(systemSpec -> systemSpec.text(systemPrompt)
                         .param("question", question))
-                .advisors(
-                        promptChatMemoryAdvisor(conversationId),
-                        questionAnswerAdvisor,
-                        simpleLoggerAdvisor)
+                .advisors(advisorSpec -> advisorSpec
+                        .advisors(questionAnswerAdvisor, messageChatMemoryAdvisor, simpleLoggerAdvisor)
+                        .param(ChatMemory.CONVERSATION_ID, activeConversationId)
+                )
                 .call()
                 .content();
 
         DocumentAgentResponse finalResponse = DocumentAgentResponse.builder()
-                .conversationId(conversationId)
+                .conversationId(activeConversationId)
                 .questionId(questionId)
                 .termList(question)
                 .sourceSet(SourceSet.fallbackSummary())
                 .documentSet(DocumentSet.of(List.of()))
                 .summary(content)
                 .build();
+
         log.info("Document Agent: final step: final response was generated. QuestionId: {}, question: {}, Summary: {}",
                 questionId, question, finalResponse.getSummary());
+
         return finalResponse;
     }
 
-    protected PromptChatMemoryAdvisor promptChatMemoryAdvisor(String conversationId) {
-        return PromptChatMemoryAdvisor
-                .builder(chatMemory)
-                .conversationId(conversationId)
-                .build();
-    }
+
 }
-
-

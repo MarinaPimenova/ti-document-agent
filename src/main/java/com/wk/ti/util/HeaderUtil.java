@@ -16,7 +16,7 @@ public class HeaderUtil {
     );
 
     public static String maskSensitiveHeaders(HttpHeaders headers) {
-        return headers.entrySet().stream()
+        return headers.headerSet().stream()
                 .map(entry -> {
                     String headerName = entry.getKey();
                     boolean isSensitive = SENSITIVE_HEADERS.stream()

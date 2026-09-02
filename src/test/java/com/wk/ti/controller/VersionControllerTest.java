@@ -1,6 +1,7 @@
 package com.wk.ti.controller;
 
 import com.wk.ti.healthcheck.VersionService;
+import com.wk.ti.common.controller.VersionController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
