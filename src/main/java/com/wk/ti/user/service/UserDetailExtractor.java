@@ -4,6 +4,7 @@ import com.wk.ti.config.GroupConfig;
 import com.wk.ti.exception.NotAuthorizedException;
 import com.wk.ti.user.model.UserDetail;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -104,7 +105,11 @@ public class UserDetailExtractor {
         return auth().getAuthorities().contains(format(ROLE_TEMPLATE, ADMIN_ROLE.toUpperCase()));
     }
 
-    private static Authentication auth() {
-        return SecurityContextHolder.getContext().getAuthentication();
+    public static Authentication auth() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
+            return null;
+        }
+        return authentication;
     }
 }
