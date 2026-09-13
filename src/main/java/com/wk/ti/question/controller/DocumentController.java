@@ -21,12 +21,12 @@ public class DocumentController {
     private final DocumentService documentService;
     private final QuestionGenerationOrchestrator questionGenerationOrchestrator;
 
-    @GetMapping(value = "/documents", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/resources", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<DocumentProjection>> getDocuments() {
         return ResponseEntity.ok(documentService.getDocuments());
     }
 
-    @PostMapping(value = "/documents/{id}/question-generation", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/resources/{id}/question-generation", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<ValidatedQuestion>> generate(
             @RequestBody QuestionGenerationRequest questionGenerationRequest,
             @PathVariable("id") Long id) {
